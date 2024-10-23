@@ -6,5 +6,5 @@ sum_of_signal_strengths = calculate_sum_of_signal_strengths('input.raw', cycles)
 print(f'Answer to first part of puzzle is: {sum_of_signal_strengths}')
 
 print('\nSolving second part of puzzle')
-print(f'Answer to first part of puzzle is:')
+print(f'Answer to second part of puzzle is:')
 render_image('input.raw')

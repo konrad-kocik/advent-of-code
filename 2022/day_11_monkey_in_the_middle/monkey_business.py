@@ -1,5 +1,5 @@
 from typing import Tuple, List, Dict, Union
-from math import floor
+from math import floor, prod
 
 MonkeysState = List[List[int]]
 MonkeyBehaviour = Dict[str, Dict[str, Union[str, int]]]
@@ -7,9 +7,9 @@ MonkeysBehaviour = List[MonkeyBehaviour]
 MonkeysStats = Dict[int, int]
 
 
-def calculate_level_of_monkey_business(input_file_path: str, rounds: int):
+def calculate_level_of_monkey_business(input_file_path: str, rounds: int, worry_decrease: bool = True):
     monkeys_state, monkeys_behaviour = _observe_monkeys(input_file_path)
-    monkeys_state, monkeys_stats = _simulate_monkey_business(monkeys_state, monkeys_behaviour, rounds)
+    monkeys_state, monkeys_stats = _simulate_monkey_business(monkeys_state, monkeys_behaviour, rounds, worry_decrease)
     monkeys_stats_sorted = list(sorted(monkeys_stats.values()))
     return monkeys_stats_sorted[-2] * monkeys_stats_sorted[-1]
 
@@ -84,7 +84,7 @@ def _add_negative_test_result_to_monkey_behaviour(line: str, monkey_behaviour: M
     monkey_behaviour['test']['if_false'] = if_false
 
 
-def _simulate_monkey_business(monkeys_state: MonkeysState, monkeys_behaviour: MonkeysBehaviour, rounds: int) -> Tuple[MonkeysState, MonkeysStats]:
+def _simulate_monkey_business(monkeys_state: MonkeysState, monkeys_behaviour: MonkeysBehaviour, rounds: int, worry_decrease: bool) -> Tuple[MonkeysState, MonkeysStats]:
     monkeys = monkeys_state.copy()
     monkeys_stats = {monkey_id: 0 for monkey_id in range(0, len(monkeys_state))}
 
@@ -93,7 +93,12 @@ def _simulate_monkey_business(monkeys_state: MonkeysState, monkeys_behaviour: Mo
             for item in monkey.copy():
                 monkeys_stats[monkey_id] += 1
                 behaviour = monkeys_behaviour[monkey_id]
-                item = _calculate_item_value(item, behaviour['operation']['operator'], behaviour['operation']['value'])
+                test_values_product = prod([monkey_behaviour['test']['value'] for monkey_behaviour in monkeys_behaviour])
+                item = _calculate_item_value(item,
+                                             behaviour['operation']['operator'],
+                                             behaviour['operation']['value'],
+                                             test_values_product,
+                                             worry_decrease)
                 target_monkey_id = _get_target_monkey_id(item, behaviour['test'])
                 monkey.pop(0)
                 monkeys[target_monkey_id].append(item)
@@ -101,7 +106,7 @@ def _simulate_monkey_business(monkeys_state: MonkeysState, monkeys_behaviour: Mo
     return monkeys_state, monkeys_stats
 
 
-def _calculate_item_value(item: int, operator: str, value: int) -> int:
+def _calculate_item_value(item: int, operator: str, value: int, test_values_product: int, worry_decrease: bool) -> int:
     if operator == '+':
         item += value
     elif operator == '*':
@@ -109,7 +114,7 @@ def _calculate_item_value(item: int, operator: str, value: int) -> int:
     elif operator == '^':
         item *= item
 
-    return int(floor(item / 3))
+    return int(floor(item / 3)) if worry_decrease else item % test_values_product
 
 
 def _get_target_monkey_id(item: int, test: Dict) -> int:
