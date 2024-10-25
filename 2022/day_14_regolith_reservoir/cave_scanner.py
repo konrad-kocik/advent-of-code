@@ -1,7 +1,8 @@
-from typing import Tuple, List, Any, Optional, Type
+from typing import Tuple, List, Any, Optional, Type, Dict
 
 Coords = Tuple[int, int]
 LineCoords = Tuple[Coords, Coords]
+TilesMatrix = Dict[int, Dict[int, 'Tile']]
 
 
 class TileContent:
@@ -68,11 +69,12 @@ class CaveMap:
     def show(self):
         print('\n')
 
-        for row in self._tiles:
+        for y in sorted(self._tiles.keys()):
+            row = self._tiles[y]
             printable_row = ''
 
-            for tile in row:
-                printable_row += tile.printable_content
+            for x in sorted(row.keys()):
+                printable_row += row[x].printable_content
 
             print(printable_row)
 
@@ -92,35 +94,31 @@ class CaveMap:
     def count_tiles_with(self, content_type: Type[TileContent]) -> int:
         tile_count = 0
 
-        for row in self._tiles:
-            for tile in row:
+        for row in self._tiles.values():
+            for tile in row.values():
                 if type(tile.content) == content_type:
                     tile_count += 1
 
         return tile_count
 
-    def _generate_tiles(self, rocks_coords: List[LineCoords]) -> List[List[Tile]]:
+    def _generate_tiles(self, rocks_coords: List[LineCoords]) -> TilesMatrix:
         min_x, max_x, min_y, max_y = self._get_cave_edges(rocks_coords)
-        tiles = []
+        tiles = {}
 
         for y in range(min_y, max_y + 1):
-            row = []
+            row = {}
 
             for x in range(min_x, max_x + 1):
                 tile_content = Rock() if self._should_tile_be_a_rock(x, y, rocks_coords) else Air()
-                row.append(Tile(x, y, tile_content))
+                row[x] = Tile(x, y, tile_content)
 
-            tiles.append(row)
+            tiles[y] = row
 
         return tiles
 
     def _get_tile(self, coords) -> Optional[Tile]:
         x, y = coords
-
-        for row in self._tiles:
-            for tile in row:
-                if tile.x == x and tile.y == y:
-                    return tile
+        return self._tiles.get(y).get(x)
 
     @staticmethod
     def _get_cave_edges(rocks_coords: List[LineCoords]) -> Tuple[int, int, int, int]:
