@@ -102,7 +102,7 @@ class CaveMap:
         return tile_count
 
     def _generate_tiles(self, rocks_coords: List[LineCoords]) -> TilesMatrix:
-        min_x, max_x, min_y, max_y = self._get_cave_edges(rocks_coords)
+        min_x, max_x, min_y, max_y = _get_cave_edges(rocks_coords)
         tiles = {}
 
         for y in range(min_y, max_y + 1):
@@ -120,18 +120,6 @@ class CaveMap:
         x, y = coords
         return self._tiles.get(y).get(x)
 
-    @staticmethod
-    def _get_cave_edges(rocks_coords: List[LineCoords]) -> Tuple[int, int, int, int]:
-        min_x, max_x, min_y, max_y = None, None, 0, None
-
-        for rock_coords in rocks_coords:
-            for coords in rock_coords:
-                x, y = coords
-                min_x = x if min_x is None or x < min_x else min_x
-                max_x = x if max_x is None or x > max_x else max_x
-                max_y = y if max_y is None or y > max_y else max_y
-
-        return min_x, max_x, min_y, max_y
 
     @staticmethod
     def _should_tile_be_a_rock(tile_x, tile_y, rocks_coords):
@@ -151,13 +139,13 @@ class CaveMap:
         return False
 
 
-def count_units_of_resting_sand_after_simulation(input_file_path: str, visualize: bool = True) -> int:
-    cave_map = _scan_cave(input_file_path)
+def count_units_of_resting_sand_after_simulation(input_file_path: str, include_floor: bool = False, visualize: bool = False) -> int:
+    cave_map = _scan_cave(input_file_path, include_floor)
     _simulate_sand_pouring(cave_map, visualize)
     return cave_map.count_tiles_with(RestingSand)
 
 
-def _scan_cave(input_file_path: str) -> CaveMap:
+def _scan_cave(input_file_path: str, include_floor: bool) -> CaveMap:
     rocks_coords = []
 
     with open(input_file_path, 'r') as file:
@@ -174,7 +162,25 @@ def _scan_cave(input_file_path: str) -> CaveMap:
                     rocks_coords.append((rock_coords[0], rock_coords[1]))
                     rock_coords = [rock_coords[1]]
 
+    if include_floor:
+        min_x, max_x, min_y, max_y = _get_cave_edges(rocks_coords)
+        floor_coords = ((min_x - max_y, max_y + 2), (max_x + max_y, max_y + 2))
+        rocks_coords.append(floor_coords)
+
     return CaveMap(rocks_coords)
+
+
+def _get_cave_edges(rocks_coords: List[LineCoords]) -> Tuple[int, int, int, int]:
+    min_x, max_x, min_y, max_y = None, None, 0, None
+
+    for rock_coords in rocks_coords:
+        for coords in rock_coords:
+            x, y = coords
+            min_x = x if min_x is None or x < min_x else min_x
+            max_x = x if max_x is None or x > max_x else max_x
+            max_y = y if max_y is None or y > max_y else max_y
+
+    return min_x, max_x, min_y, max_y
 
 
 def _simulate_sand_pouring(cave_map: CaveMap, visualize: bool):
@@ -200,6 +206,8 @@ def _simulate_sand_pouring(cave_map: CaveMap, visualize: bool):
                 current_coords = right_coords
             else:
                 _rest_sand(cave_map, prev_coords, visualize)
+                if prev_coords == sand_source_coords:
+                    should_be_pouring = False
                 break
 
             if cave_map.tile_exists(current_coords):
@@ -208,6 +216,8 @@ def _simulate_sand_pouring(cave_map: CaveMap, visualize: bool):
                 cave_map.set_tile(prev_coords, Air())
                 should_be_pouring = False
                 break
+
+    cave_map.show()
 
 
 def _move_sand(cave_map: CaveMap, next_coords: Coords, prev_coords: Coords, visualize: bool):
