@@ -5,9 +5,9 @@ Equation = Tuple[int, List[int]]
 Equations = List[Equation]
 
 
-def calculate_total_calibration_result(input_file_path: str) -> int:
+def calculate_total_calibration_result(input_file_path: str, allow_concatenation: bool = False) -> int:
     equations = _get_equations(input_file_path)
-    true_equations = _find_true_equations(equations)
+    true_equations = _find_true_equations(equations, allow_concatenation)
     return _calculate_sum_of_test_values(true_equations)
 
 
@@ -23,19 +23,20 @@ def _get_equations(input_file_path: str) -> Equations:
     return equations
 
 
-def _find_true_equations(equations: Equations) -> Equations:
+def _find_true_equations(equations: Equations, allow_concatenation: bool) -> Equations:
     true_equations = []
 
     for equation in equations:
-        if _is_true_equation(equation):
+        if _is_true_equation(equation, allow_concatenation):
             true_equations.append(equation)
 
     return true_equations
 
 
-def _is_true_equation(equation: Equation) -> bool:
+def _is_true_equation(equation: Equation, allow_concatenation: bool) -> bool:
     test_value, numbers = equation
-    operators_combinations = list(product(['+', '*'], repeat=len(numbers) - 1))
+    allowed_operators = ['+', '*', '||'] if allow_concatenation else ['+', '*']
+    operators_combinations = list(product(allowed_operators, repeat=len(numbers) - 1))
 
     for operators in operators_combinations:
         if _calculate_equation(numbers, operators) == test_value:
@@ -53,6 +54,8 @@ def _calculate_equation(numbers: List[int], operators: Tuple) -> int:
             result += numbers[i]
         if operator == '*':
             result *= numbers[i]
+        if operator == '||':
+            result = int(str(result) + str(numbers[i]))
 
     return result
 
