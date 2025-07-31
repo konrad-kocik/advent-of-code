@@ -1,17 +1,20 @@
 from typing import List, Dict, Tuple
+from sympy import symbols, Eq, solve
+from sympy.core.numbers import Integer
 
 Coords = Tuple[int, int]
 ClawMachineConfig = Dict[str, Coords]
+ButtonsPushCount = Dict[str, int]
 
 
-def calculate_minimal_number_of_tokens_to_win_prizes(input_file_path: str) -> int:
-    claw_machines_configs = _get_claw_machines_configs(input_file_path)
-    valid_button_pushes_for_each_machine = _get_valid_button_pushes_for_each_machine(claw_machines_configs)
-    minimum_tokes_to_win_prize_for_each_machine = _get_minimum_tokes_to_win_prize_for_each_machine(valid_button_pushes_for_each_machine)
-    return sum(minimum_tokes_to_win_prize_for_each_machine)
+def calculate_minimal_number_of_tokens_to_win_prizes(input_file_path: str, unit_conversion: bool = False) -> int:
+    claw_machines_configs = _get_claw_machines_configs(input_file_path, unit_conversion)
+    buttons_push_count_for_each_machine = _get_buttons_push_count_for_each_machine(claw_machines_configs)
+    cost_to_win_prize_for_each_machine = _get_cost_to_win_prize_for_each_machine(buttons_push_count_for_each_machine)
+    return sum(cost_to_win_prize_for_each_machine)
 
 
-def _get_claw_machines_configs(input_file_path: str) -> List[ClawMachineConfig]:
+def _get_claw_machines_configs(input_file_path: str, unit_conversion: bool) -> List[ClawMachineConfig]:
     claw_machines_configs = []
 
     with open(input_file_path, 'r') as file:
@@ -34,6 +37,10 @@ def _get_claw_machines_configs(input_file_path: str) -> List[ClawMachineConfig]:
                     _, x, y = line.split()
                     x = int(x[2:-1])
                     y = int(y[2:])
+
+                    if unit_conversion:
+                        x, y = x + 10000000000000, y + 10000000000000
+
                     claw_machine_config['prize'] = (x, y)
 
     claw_machines_configs.append(claw_machine_config)
@@ -41,43 +48,31 @@ def _get_claw_machines_configs(input_file_path: str) -> List[ClawMachineConfig]:
     return claw_machines_configs
 
 
-def _get_valid_button_pushes_for_each_machine(claw_machines_configs: List[ClawMachineConfig]) -> List[List[Dict[str, int]]]:
-    valid_button_pushes_count_for_each_machine = []
-
-    for claw_machine_config in claw_machines_configs:
-        valid_button_pushes_count_for_a_machine = []
-
-        for button_a_pushes_count in range(0, 101):
-            for button_b_pushes_count in range(0, 101):
-                result_coords = _calculate_result_coords(claw_machine_config, button_a_pushes_count, button_b_pushes_count)
-
-                if result_coords == claw_machine_config['prize']:
-                    valid_button_pushes_count_for_a_machine.append({'button_A': button_a_pushes_count,
-                                                                    'button_B': button_b_pushes_count})
-
-        valid_button_pushes_count_for_each_machine.append(valid_button_pushes_count_for_a_machine)
-
-    return valid_button_pushes_count_for_each_machine
+def _get_buttons_push_count_for_each_machine(claw_machines_configs: List[ClawMachineConfig]) -> List[ButtonsPushCount]:
+    return [_get_buttons_push_count_for_a_machine(claw_machine_config) for claw_machine_config in claw_machines_configs]
 
 
-def _calculate_result_coords(claw_machine_config: ClawMachineConfig, button_a_pushes_count: int, button_b_pushes_count: int):
-    button_a_result_coords = (button_a_pushes_count * claw_machine_config['button_a'][0],
-                              button_a_pushes_count * claw_machine_config['button_a'][1])
-    button_b_result_coords = (button_b_pushes_count * claw_machine_config['button_b'][0],
-                              button_b_pushes_count * claw_machine_config['button_b'][1])
-    return (button_a_result_coords[0] + button_b_result_coords[0],
-            button_a_result_coords[1] + button_b_result_coords[1])
+def _get_buttons_push_count_for_a_machine(claw_machine_config: ClawMachineConfig) -> ButtonsPushCount:
+    button_a_x = claw_machine_config['button_a'][0]
+    button_a_y = claw_machine_config['button_a'][1]
+    button_b_x = claw_machine_config['button_b'][0]
+    button_b_y = claw_machine_config['button_b'][1]
+    prize_x = claw_machine_config['prize'][0]
+    prize_y = claw_machine_config['prize'][1]
+
+    a, b = symbols('a b')
+    equations_system = (Eq(button_a_x * a + button_b_x * b, prize_x),
+                        Eq(button_a_y * a + button_b_y * b, prize_y))
+
+    solution = solve(equations_system, (a, b))
+    a, b = solution[a], solution[b]
+    return {'button_a': a, 'button_b': b} if isinstance(a, Integer) and isinstance(b, Integer) else {}
 
 
-def _get_minimum_tokes_to_win_prize_for_each_machine(valid_button_pushes_for_each_machine: List[List[Dict[str, int]]]) -> List[int]:
-    return [_get_minimum_tokes_to_win_prize_for_a_machine(valid_button_pushes_for_a_machine)
-            for valid_button_pushes_for_a_machine in valid_button_pushes_for_each_machine
-            if valid_button_pushes_for_a_machine]
-
-
-def _get_minimum_tokes_to_win_prize_for_a_machine(valid_button_pushes_for_a_machine: List[Dict[str, int]]) -> int:
+def _get_cost_to_win_prize_for_each_machine(buttons_push_count_for_each_machine: List[ButtonsPushCount]) -> List[int]:
     button_a_cost = 3
     button_b_cost = 1
 
-    return min([button_pushes['button_A'] * button_a_cost + button_pushes['button_B'] * button_b_cost
-                for button_pushes in valid_button_pushes_for_a_machine])
+    return [buttons_push_count['button_a'] * button_a_cost + buttons_push_count['button_b'] * button_b_cost
+            for buttons_push_count in buttons_push_count_for_each_machine
+            if buttons_push_count]
