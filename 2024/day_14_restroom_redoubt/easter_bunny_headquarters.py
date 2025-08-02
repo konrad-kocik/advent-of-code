@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 from math import prod
 
 Coords = Tuple[int, int]
@@ -15,6 +15,14 @@ class Robot:
         self._position_y = position_y
         self._velocity_x = velocity_x
         self._velocity_y = velocity_y
+
+    @property
+    def position_x(self) -> int:
+        return self._position_x
+
+    @property
+    def position_y(self) -> int:
+        return self._position_y
 
     def move(self, area_width: int, area_height: int):
         new_x = self._position_x + self._velocity_x
@@ -48,6 +56,12 @@ def calculate_safety_factor(input_file_path: str, area_width: int, area_height: 
     sectors = _divide_area_into_sectors(area_width, area_height)
     robots_count_in_sectors = _count_robots_in_sectors(robots, sectors)
     return prod(robots_count_in_sectors)
+
+
+def wait_for_easter_egg(input_file_path: str, area_width: int, area_height: int) -> int:
+    robots = _scout_robots(input_file_path)
+    seconds_elapsed = _wait_for_easter_egg(robots, area_width, area_height)
+    return seconds_elapsed
 
 
 def _scout_robots(input_file_path: str) -> List[Robot]:
@@ -96,3 +110,55 @@ def _count_robots_in_sectors(robots: List[Robot], sectors: List[Sector]):
         robots_count_in_sectors.append(robots_count_in_sector)
 
     return robots_count_in_sectors
+
+
+def _wait_for_easter_egg(robots: List[Robot], area_width: int, area_height: int) -> int:
+    seconds_elapsed = 0
+    found = False
+
+    while not found:
+        for robot in robots:
+            robot.move(area_width, area_height)
+
+        seconds_elapsed += 1
+        found = _check_for_easter_egg(robots, area_height, seconds_elapsed)
+
+    return seconds_elapsed
+
+
+def _check_for_easter_egg(robots: List[Robot], area_height: int, seconds_elapsed: int) -> bool:
+    expected_neighbouring_robots_count = 6
+    robots_in_rows = _arrange_robots_in_rows(robots, area_height)
+
+    for row_of_robots in robots_in_rows.values():
+        row_of_robots.sort(key=lambda r: r.position_x)
+        neighbouring_robots_count = 0
+
+        for robot in row_of_robots:
+            if row_of_robots.index(robot) == len(row_of_robots) - 1:
+                break
+
+            if robot.position_x + 1 == row_of_robots[row_of_robots.index(robot) + 1].position_x:
+                neighbouring_robots_count += 1
+            else:
+                neighbouring_robots_count = 0
+
+            if neighbouring_robots_count == expected_neighbouring_robots_count:
+                print(f'Potential easter egg found. Seconds elapsed: {seconds_elapsed}')
+                option = input('Choose an option:\n[1] Continue searching\n[2] Stop searching\n')
+
+                if option == '1':
+                    continue
+                elif option == '2':
+                    return True
+
+    return False
+
+
+def _arrange_robots_in_rows(robots: List[Robot], area_height: int) -> Dict[int, List[Robot]]:
+    robots_in_rows = {y: [] for y in range(0, area_height + 1)}
+
+    for robot in robots:
+        robots_in_rows[robot.position_y].append(robot)
+
+    return robots_in_rows
