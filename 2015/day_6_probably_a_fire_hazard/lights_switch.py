@@ -23,10 +23,15 @@ class Instruction:
 class Light:
     def __init__(self):
         self._is_on = False
+        self._brightness = 0
 
     @property
     def is_on(self) -> bool:
         return self._is_on
+
+    @property
+    def brightness(self) -> int:
+        return self._brightness
 
     def turn_on(self):
         self._is_on = True
@@ -37,9 +42,13 @@ class Light:
     def toggle(self):
         self._is_on = not self._is_on
 
-    def show(self):
-        color = '93' if self._is_on else '90'
-        print(f'\033[{color}m.\033[0m', end='')
+    def increase_brightness(self, amount: int):
+        self._brightness += amount
+        self._is_on = True
+
+    def decrease_brightness(self, amount: int):
+        self._brightness = max(0, self._brightness - amount)
+        self._is_on = False if self._brightness == 0 else True
 
 
 class LightsSwitch:
@@ -51,13 +60,9 @@ class LightsSwitch:
     def lit_lights_count(self) -> int:
         return sum(1 for row in self._grid for light in row if light.is_on)
 
-    def show_grid(self):
-        print()
-
-        for row in self._grid:
-            for light in row:
-                light.show()
-            print()
+    @property
+    def total_brightness(self) -> int:
+        return sum(light.brightness for row in self._grid for light in row)
 
     def load_instructions(self, input_file_path: str):
         with open(input_file_path, 'r') as input_file:
@@ -82,15 +87,15 @@ class LightsSwitch:
 
                 self._instructions.append(Instruction(action, start_coords, end_coords))
 
-    def execute_instructions(self):
+    def execute_instructions(self, dimmer=False):
         for instruction in self._instructions:
             lights = [self._grid[x][y] for x in range(instruction.start_coords.x, instruction.end_coords.x + 1)
                                        for y in range(instruction.start_coords.y, instruction.end_coords.y + 1)]
 
             for light in lights:
                 if instruction.action == Actions.TURN_ON:
-                    light.turn_on()
+                    light.increase_brightness(1) if dimmer else light.turn_on()
                 elif instruction.action == Actions.TURN_OFF:
-                    light.turn_off()
+                    light.decrease_brightness(1) if dimmer else light.turn_off()
                 elif instruction.action == Actions.TOGGLE:
-                    light.toggle()
+                    light.increase_brightness(2) if dimmer else light.toggle()
