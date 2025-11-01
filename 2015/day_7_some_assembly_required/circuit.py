@@ -121,6 +121,10 @@ class Circuit:
         wire = self._find_wire(wire_name)
         return wire.signal
 
+    def override(self, wire_name: str, signal: int):
+        wire = self._find_wire(wire_name)
+        wire.signal = signal
+
     def _install_and_gate(self, instruction: str):
         input_wire_name_1, _, input_wire_name_2, _, output_wire_name = instruction.split()
         input_wire_1 = self._install_wire(input_wire_name_1)
