@@ -5,7 +5,9 @@ Instruction = Tuple[int, int]
 
 
 class Debugger:
-    def __init__(self):
+    def __init__(self, input_file_path: str):
+        self._input_file_path = input_file_path
+        self._initial_register_a = 0
         self._register_a = 0
         self._register_b = 0
         self._register_c = 0
@@ -13,13 +15,37 @@ class Debugger:
         self._instruction_pointer = 0
         self._output = []
 
-    def initialize(self, input_file_path: str):
-        with open(input_file_path, 'r') as file:
+    def run_program(self):
+        self._initialize()
+        self._execute_instructions()
+
+    def copy_program(self):
+        checked_initial_register_a = 0
+
+        while checked_initial_register_a < 50000000:
+            checked_initial_register_a += 1
+            self._initialize()
+            self._initial_register_a = checked_initial_register_a
+            self._register_a = checked_initial_register_a
+            self._execute_instructions()
+
+            if self.read_output().replace(',', '') == self._program:
+                break
+
+    def read_output(self) -> str:
+        return ','.join(self._output)
+
+    def read_initial_register_a(self):
+        return self._initial_register_a
+
+    def _initialize(self):
+        with open(self._input_file_path, 'r') as file:
             for line in file:
                 line = line.strip()
 
                 if line.startswith('Register A'):
                     self._register_a = int(line.split(': ')[1])
+                    self._initial_register_a = self._register_a
                 elif line.startswith('Register B'):
                     self._register_b = int(line.split(': ')[1])
                 elif line.startswith('Register C'):
@@ -27,13 +53,13 @@ class Debugger:
                 elif line.startswith('Program'):
                     self._program = line.split(': ')[1].replace(',', '')
 
-    def run_program(self):
+        self._instruction_pointer = 0
+        self._output = []
+
+    def _execute_instructions(self):
         while self._instruction_pointer < len(self._program):
             instruction = self._get_instruction()
             self._execute_instruction(instruction)
-
-    def get_output(self) -> str:
-        return ','.join(self._output)
 
     def _get_instruction(self) -> Instruction:
         return int(self._program[self._instruction_pointer]), int(self._program[self._instruction_pointer + 1])
