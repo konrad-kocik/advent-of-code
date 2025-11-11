@@ -5,9 +5,13 @@ from typing import Optional
 
 
 def find_shortest_route(input_file_path: str) -> int:
-    distances = _get_distances(input_file_path)
-    shortest_route = _find_shortest_route(distances)
-    return shortest_route
+    distances_graph = _get_distances(input_file_path)
+    return _find_shortest_route(distances_graph)
+
+
+def find_longest_route(input_file_path: str) -> int:
+    distances_graph = _get_distances(input_file_path)
+    return _find_longest_route(distances_graph)
 
 
 def _get_distances(input_file_path: str) -> Graph:
@@ -36,6 +40,19 @@ def _find_shortest_route(distances_graph: Graph) -> int:
             shortest_distance = distance
 
     return shortest_distance
+
+
+def _find_longest_route(distances_graph: Graph) -> int:
+    longest_distance = 0
+    potential_routes = permutations(distances_graph.nodes)
+
+    for route in potential_routes:
+        distance = _calculate_route_total_distance(route, distances_graph)
+
+        if distance is not None and distance > longest_distance:
+            longest_distance = distance
+
+    return longest_distance
 
 
 def _calculate_route_total_distance(route: tuple, distances_graph: Graph) -> Optional[int]:
