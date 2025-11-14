@@ -2,13 +2,13 @@ from networkx import Graph
 from itertools import permutations
 
 
-def find_best_arrangement(input_file_path: str) -> int:
-    relationhips_graph = _get_relationships_graph(input_file_path)
+def find_best_arrangement(input_file_path: str, include_host: bool = False) -> int:
+    relationhips_graph = _get_relationships_graph(input_file_path, include_host)
     best_arrangement_rating = _find_best_arrangement(relationhips_graph)
     return best_arrangement_rating
 
 
-def _get_relationships_graph(input_file_path: str) -> Graph:
+def _get_relationships_graph(input_file_path: str, include_host: bool) -> Graph:
     relationships = []
 
     with open(input_file_path) as input_file:
@@ -26,6 +26,11 @@ def _get_relationships_graph(input_file_path: str) -> Graph:
 
     relationships_graph = Graph()
     relationships_graph.add_weighted_edges_from(relationships)
+
+    if include_host:
+        host_relationships = [('Host', person, 0) for person in relationships_graph.nodes]
+        relationships_graph.add_weighted_edges_from(host_relationships)
+
     return relationships_graph
 
 
