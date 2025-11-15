@@ -11,13 +11,14 @@ class Reindeer:
     fly_time_remaining: int = 0
     rest_time_remaining: int = 0
     distance: int = 0
+    score: int = 0
 
 
-def race(input_file_path: str, duration: int) -> tuple[str, int]:
+def race(input_file_path: str, duration: int, new_scoring_system: bool = False) -> tuple[str, int]:
     reindeers = _get_reindeers(input_file_path)
     _simulate_race(reindeers, duration)
-    winner, distance = _find_winner(reindeers)
-    return winner, distance
+    winner, result = _find_winner(reindeers, new_scoring_system)
+    return winner, result
 
 
 def _get_reindeers(input_file_path: str) -> list[Reindeer]:
@@ -40,17 +41,9 @@ def _simulate_race(reindeers: list[Reindeer], duration: int):
 
     for _ in range(duration):
         for reindeer in reindeers:
-            if reindeer.is_flying:
-                reindeer.distance += reindeer.speed
-                reindeer.fly_time_remaining -= 1
-                if reindeer.fly_time_remaining == 0:
-                    reindeer.is_flying = False
-                    reindeer.rest_time_remaining = reindeer.rest_duration
-            else:
-                reindeer.rest_time_remaining -= 1
-                if reindeer.rest_time_remaining == 0:
-                    reindeer.is_flying = True
-                    reindeer.fly_time_remaining = reindeer.fly_duration
+            _progress_reindeer(reindeer)
+            
+        _award_points_to_leaders(reindeers)
 
 
 def _launch_reindeers(reindeers: list[Reindeer]):
@@ -59,11 +52,43 @@ def _launch_reindeers(reindeers: list[Reindeer]):
         reindeer.fly_time_remaining = reindeer.fly_duration
 
 
-def _find_winner(reindeers: list[Reindeer]) -> tuple[str, int]:
+def _progress_reindeer(reindeer: Reindeer):
+    if reindeer.is_flying:
+        reindeer.distance += reindeer.speed
+        reindeer.fly_time_remaining -= 1
+        if reindeer.fly_time_remaining == 0:
+            reindeer.is_flying = False
+            reindeer.rest_time_remaining = reindeer.rest_duration
+    else:
+        reindeer.rest_time_remaining -= 1
+        if reindeer.rest_time_remaining == 0:
+            reindeer.is_flying = True
+            reindeer.fly_time_remaining = reindeer.fly_duration
+
+
+def _award_points_to_leaders(reindeers: list[Reindeer]):
+    leaders: list[Reindeer] = []
+
+    for reindeer in reindeers:
+        if not leaders:
+            leaders.append(reindeer)
+        elif leaders and reindeer.distance == leaders[0].distance:
+            leaders.append(reindeer)
+        elif leaders and reindeer.distance > leaders[0].distance:
+            leaders.clear()
+            leaders.append(reindeer)
+
+    for leader in leaders:
+        leader.score += 1
+
+
+def _find_winner(reindeers: list[Reindeer], new_scoring_system: bool) -> tuple[str, int]:
     winner: Reindeer = reindeers[0]
 
     for reindeer in reindeers:
-        if reindeer.distance > winner.distance:
+        if new_scoring_system and reindeer.score > winner.score:
+            winner = reindeer
+        elif not new_scoring_system and reindeer.distance > winner.distance:
             winner = reindeer
 
-    return winner.name, winner.distance
+    return winner.name, winner.score if new_scoring_system else winner.distance
