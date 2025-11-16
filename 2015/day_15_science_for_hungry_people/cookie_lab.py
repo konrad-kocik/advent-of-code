@@ -13,9 +13,9 @@ class Ingredient:
     calories: int
 
 
-def find_best_recipe(input_file_path: str) -> int:
+def find_best_recipe(input_file_path: str, calories_requirement: int | None = None) -> int:
     ingredients = _get_ingredients(input_file_path)
-    score = _find_best_recipe(ingredients)
+    score = _find_best_recipe(ingredients, calories_requirement)
     return score
 
 
@@ -36,11 +36,11 @@ def _get_ingredients(input_file_path: str) -> list[Ingredient]:
     return ingredients
 
 
-def _find_best_recipe(ingredients: list[Ingredient]) -> int:
+def _find_best_recipe(ingredients: list[Ingredient], calories_requirement: int | None) -> int:
     best_score = 0
 
     for ingredients_combination in _ingredients_combinations(total_spoons=100, ingredients_count=len(ingredients)):
-        capacity_score, durability_score, flavor_score, texture_score = 0, 0, 0, 0
+        capacity_score, durability_score, flavor_score, texture_score, calories = 0, 0, 0, 0, 0
 
         for ingredient_id, ingredient in enumerate(ingredients):
             spoons_count = ingredients_combination[ingredient_id]
@@ -48,13 +48,15 @@ def _find_best_recipe(ingredients: list[Ingredient]) -> int:
             durability_score += spoons_count * ingredient.durability
             flavor_score += spoons_count * ingredient.flavor
             texture_score += spoons_count * ingredient.texture
+            calories += spoons_count * ingredient.calories
 
         combination_score = ((capacity_score if capacity_score > 0 else 0) * 
                              (durability_score if durability_score > 0 else 0) * 
                              (flavor_score if flavor_score > 0 else 0) * 
                              (texture_score if texture_score > 0 else 0))
 
-        if combination_score > best_score:
+        if ((calories_requirement and calories == calories_requirement and combination_score > best_score) or 
+            (not calories_requirement and combination_score > best_score)):
             best_score = combination_score
 
     return best_score
