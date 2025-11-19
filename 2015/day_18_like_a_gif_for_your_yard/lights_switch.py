@@ -16,6 +16,9 @@ class Light:
     def is_on(self) -> bool:
         return self._is_on
 
+    def turn_on(self):
+        self._is_on = True
+
 
 Grid = list[list[Light]]
 
@@ -23,6 +26,14 @@ Grid = list[list[Light]]
 class LightsSwitch:
     def __init__(self):
         self._grid: Grid = []
+
+    @property
+    def grid_height(self) -> int:
+        return len(self._grid)
+
+    @property
+    def grid_width(self) -> int:
+        return len(self._grid[0])
 
     @property
     def lit_lights_count(self) -> int:
@@ -34,9 +45,20 @@ class LightsSwitch:
                 row = [Light(x, y, is_on=(char == '#')) for x, char in enumerate(line.strip())]
                 self._grid.append(row)
 
-    def animate(self, steps: int):
+    def animate(self, steps: int, corner_lights_stuck: bool = False):
         for _ in range(steps):
+            self._turn_on_corner_lights() if corner_lights_stuck else None
             self._grid = [[Light(light.x, light.y, is_on=self._is_updated_light_on(light)) for light in row] for row in self._grid]
+        self._turn_on_corner_lights() if corner_lights_stuck else None
+
+    def _turn_on_corner_lights(self):
+        corner_lights = [self._grid[0][0],
+                         self._grid[0][-1],
+                         self._grid[-1][0],
+                         self._grid[-1][-1]]
+        
+        for corner_light in corner_lights:
+            corner_light.turn_on()
 
     def _is_updated_light_on(self, light: Light) -> bool:
         neighbours_turned_on = 0
@@ -58,6 +80,6 @@ class LightsSwitch:
 
     def _is_inside_grid(self, x: int, y: int) -> bool:
         return (y >= 0 and
-                y < len(self._grid) and
+                y < self.grid_height and
                 x >= 0 and
-                x < len(self._grid[y]))
+                x <self.grid_width)

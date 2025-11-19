@@ -6,3 +6,10 @@ def test_lights_switch():
     lights_switch.configure('test_input.raw')
     lights_switch.animate(steps=4)
     assert lights_switch.lit_lights_count == 4
+
+
+def test_lights_switch_with_corner_lights_stuck():
+    lights_switch = LightsSwitch()
+    lights_switch.configure('test_input.raw')
+    lights_switch.animate(steps=5, corner_lights_stuck=True)
+    assert lights_switch.lit_lights_count == 17
