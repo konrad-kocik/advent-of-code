@@ -7,10 +7,20 @@ class Safe:
     def zeroes_count(self) -> int:
         return self._zeroes_count
 
-    def input_combination(self, input_file_path: str):
+    def input_combination(self, input_file_path: str, count_intermediate_zeroes: bool = False):
         with open(input_file_path) as input_file:
             combination = [int(line.strip().replace('L', '-').replace('R', '')) for line in input_file]
 
-        for move in combination:
-            self._lock_position = (self._lock_position + move) % 100
-            self._zeroes_count += 1 if self._lock_position == 0 else 0
+        for delta in combination:
+            for _ in range(abs(delta)):
+                self._lock_position += 1 if delta > 0 else -1
+
+                if self._lock_position == 100:
+                    self._lock_position = 0
+                
+                if self._lock_position == -1:
+                    self._lock_position = 99
+
+                self._zeroes_count += 1 if self._lock_position == 0 and count_intermediate_zeroes else 0
+
+            self._zeroes_count += 1 if self._lock_position == 0 and not count_intermediate_zeroes else 0
